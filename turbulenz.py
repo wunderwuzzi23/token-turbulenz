@@ -40,12 +40,22 @@ def test_token(token, model, temperature, verbose, system_prompt, prompt_templat
 
     while retries < max_retries:
         try:
-            response = openai.ChatCompletion.create(
-                model=model,
-                messages=messages,
-                max_tokens=1000,
-                temperature=temperature
-            )
+
+            response=""
+            if openai.api_type == "azure":
+                response = openai.ChatCompletion.create(
+                    depoloyment_id=model,
+                    messages=messages,
+                    max_tokens=1000,
+                    temperature=temperature
+                )
+            else:
+                response = openai.ChatCompletion.create(
+                    model=model,
+                    messages=messages,
+                    max_tokens=1000,
+                    temperature=temperature
+                )
             break
         except Exception as e:
             logging.error(f"Error: {e}. Retry {retries}...", exc_info=True)
@@ -113,13 +123,22 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Token Turbulenz")
 
     parser.add_argument('--template_file', type=str, default="./templates/default.yaml", help='Path to YAML template file')
-    parser.add_argument('--model', type=str, default="gpt-3.5-turbo", help='Model to use for testing')
+    parser.add_argument('--model', type=str, default="gpt-3.5-turbo", help='Model to use for testing, if Azure this is the Deployment ID')
     parser.add_argument('--max_retries', type=int, default=3, help='Maximum retries API is busy')
     parser.add_argument('--temperature', type=float, default=0.2, help='Temperature setting for chat completion call')
     parser.add_argument('--verbose', type=bool, default=False, help='Print prompts')
     parser.add_argument('--start_index', type=int, default=0, help='Token start index')
     parser.add_argument('--count', type=int, default=10, help='How many tokens to test, starting from start index.')
+    parser.add_argument('--azure_base_api', type=str, default="", help='If you want to use Azure OpenAI, set the endpoint')
+    #parser.add_argument('--azure_deployment_id', type=str, default="", help='Name of the Azure OAI deployment')
+    parser.add_argument('--azure_version', type=str, default="2023-03-15-preview", help='Azure OpenAI API version')
     
     args = parser.parse_args()
+
+    #Are we using Azure OpenAI
+    if args.azure_base_api !="":
+        openai.api_type = "azure"
+        openai.api_Base = args.azure_base_api
+        openai.api_version = args.azure_version
 
     main(args)
