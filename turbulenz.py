@@ -44,7 +44,7 @@ def test_token(token, model, temperature, verbose, system_prompt, prompt_templat
             response=""
             if openai.api_type == "azure":
                 response = openai.ChatCompletion.create(
-                    depoloyment_id=model,
+                    deployment_id=model,
                     messages=messages,
                     max_tokens=1000,
                     temperature=temperature
@@ -58,9 +58,9 @@ def test_token(token, model, temperature, verbose, system_prompt, prompt_templat
                 )
             break
         except Exception as e:
-            logging.error(f"Error: {e}. Retry {retries}...", exc_info=True)
+            print(f"Error: {e}. Retry {retries}...")
             retries += 1
-            time.sleep(1)
+            time.sleep(3)
 
         if retries == max_retries:
             logging.error(f"Failed to test token '{token}' after {max_retries} retries")
@@ -114,6 +114,7 @@ def main(args):
         print(colored(result_text, result_color))
         #logging.info(colored(result_text, result_color))
 
+        time.sleep(1)
         # Break the loop if the count limit has been reached
         if args.count and i >= args.start_index + args.count-1:
             break 
@@ -135,10 +136,12 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
 
-    #Are we using Azure OpenAI
+    #Are we using Azure OpenAI?
     if args.azure_base_api !="":
+        print("args.azure_base_api")
+        print("args.azure_version")
         openai.api_type = "azure"
-        openai.api_Base = args.azure_base_api
+        openai.api_base = args.azure_base_api
         openai.api_version = args.azure_version
 
     main(args)
