@@ -5,6 +5,7 @@ import os
 import argparse
 from termcolor import colored
 import yaml
+import json
 
 # Configure logging
 logging.basicConfig(filename='fuzzer.log', level=logging.INFO, format='%(asctime)s %(message)s')
@@ -68,6 +69,16 @@ def test_token(token, model, temperature, verbose, system_prompt, prompt_templat
 
     #print this in JSON in future
     logging.info(f"Test Case: {test_case} | Response: {response.choices[0].message.content}") 
+    data = {
+        "token": token,
+        "request": messages,
+        "temperature": temperature,
+        "response": response
+    }
+
+    with open("results.json", "a") as outfile:
+        json.dump(data, outfile)
+        outfile.write("\n")
 
     return injection_success_string in response.choices[0].message.content
 
