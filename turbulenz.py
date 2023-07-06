@@ -21,21 +21,24 @@ def read_yaml_template(file_path):
         data = yaml.safe_load(f)
     return data
 
-def test_token(token, model, temperature, verbose, system_prompt, prompt_template, injection_success_string, injection_instruction, max_retries):
+def test_token(token, model, temperature, verbose, template_messages, injection_success_string, injection_instruction, max_retries):
     """
     Test a given token using the OpenAI API, and return whether the test was successful.
     """
-    # Insert the token into the prompt and append the injection instructions
-    test_case = f"{token}{injection_instruction}"
-    prompt = prompt_template.format(test_case)
 
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": prompt}
-    ]
+    messages = []
+    # Build message array
+    for message in template_messages:
+
+        # Insert the token into the prompt and append the injection instructions
+        test_case = f"{token}{injection_instruction}"
+        # print(message)
+        message["content"] = str(message["content"]).format(test_case)
+
+        messages.append(message)
 
     if verbose:
-        logging.info(f"Prompt: {prompt}")
+        logging.info(f"Messages: {messages}")
 
     retries = 0
 
@@ -103,8 +106,8 @@ def print_banner(model, temperature, count, prompt_template, injection_instructi
 
 
 def main(args):
-    data = read_yaml_template(args.template_file)["template"][0]
-    print_banner(args.model, args.temperature, args.count, data["prompt"], data["payload"], data["success"])
+    data = read_yaml_template(args.template)["template"][0]
+    print_banner(args.model, args.temperature, args.count, data["messages"], data["payload"], data["success"])
 
     # Load the tokens from the file
     with open('tokens.list', 'r') as f:
@@ -117,7 +120,7 @@ def main(args):
         print("Test #{:>6} | Token: {:<12} | Result: ".format(i, token), end="", flush=True)
         #logging.info(f"Test #{i:>6} | Token: {token:<12} | Result: ")
 
-        test_success = test_token(token, args.model, args.temperature, args.verbose, data["system_prompt"], data["prompt"], 
+        test_success = test_token(token, args.model, args.temperature, args.verbose, data["messages"], 
                                   data["success"], data["payload"], args.max_retries)
 
         result_color = "yellow" if test_success else "red"
@@ -134,7 +137,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Token Turbulenz")
 
-    parser.add_argument('--template_file', type=str, default="./templates/default.yaml", help='Path to YAML template file')
+    parser.add_argument('--template', type=str, default="./templates/default.yaml", help='Path to YAML template file')
     parser.add_argument('--model', type=str, default="gpt-3.5-turbo", help='Model to use for testing, if Azure this is the Deployment ID')
     parser.add_argument('--max_retries', type=int, default=3, help='Maximum retries API is busy')
     parser.add_argument('--temperature', type=float, default=0.2, help='Temperature setting for chat completion call')
